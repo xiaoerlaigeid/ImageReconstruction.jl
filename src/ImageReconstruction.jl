@@ -3,8 +3,8 @@ module ImageReconstruction
 using Base.Threads
 using Interpolations
 using FFTW
-
-export radon, iradon
+using ImageTransformations
+export radon, iradon, sinogram
 
 """
     radon(I::AbstractMatrix, θ::AbstractRange, t::AbstractRange)
@@ -99,6 +99,33 @@ function iradon(P::AbstractMatrix, θ::AbstractRange, t::AbstractRange)
         end
     end
     sum(I) .* π ./ K
+end
+
+
+"""
+    sinogram(I::AbstractMatrix, n::AbstractRange)
+
+Generate a sinogram `I` with `n` views  and producing an image on a 128x128 matrix.
+"""
+function sinogram(I::AbstractMatrix, n::AbstractRange)
+
+    angles = LinRange(1, 180, n);
+
+    #Add padding (zeros) to avoid data loss while rotating
+    image_size = 128;
+    image_diagonal = sqrt(image_size^2 + image_size^2);
+    padding_amount = ceil(image_diagonal - image_size) + 2;
+    padded_image = zeros(image_size+padding_amount, image_size+padding_amount);
+    padded_image(ceil(padding_amount/2):(ceil(padding_amount/2)+image_size-1), 
+                 ceil(padding_amount/2):(ceil(padding_amount/2)+image_size-1)) = I;
+
+    # Rotate the image for each angle and sum up the columns of each projected image to create sinogram
+    n = length(angles);
+    sinogram_image = zeros(size(padded_image,2), n);
+    for i = 1:n
+        temp_image = imrotate(padded_image, 90-angles(i), 'bilinear', 'crop');
+        sinogram_image(:,i) = (sum(temp_image))'; 
+    return sinogram_image
 end
 
 end # module
