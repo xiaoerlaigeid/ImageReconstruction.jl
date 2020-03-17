@@ -29,5 +29,5 @@ end
 using Images: shepp_logan
 @testset "sinogram - shepp logan" begin
     Igt = shepp_logan(128)
-    sinogram(igt,10)
+    sinogram(Igt,10)
 end
